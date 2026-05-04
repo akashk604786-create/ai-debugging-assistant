@@ -3,17 +3,21 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 import streamlit as st
-from utils.llm_client import GeminiClient
-from utils.debugging_helper import build_debugging_prompt
 
-
-def main():
-    st.set_page_config(
+st.set_page_config(
         page_title= "AI Debugging Assistant",
         page_icon="🔎",
         layout="centered"
     )
 
+st.write("App loaded successfully")
+
+from utils.llm_client import GeminiClient
+from utils.debugging_helper import build_debugging_prompt
+
+
+def main():
+    
     st.title("🔧 AI Debugging Assistant")
     st.write("Paste your **Python Code** or **error log**, and I'll help you debug it.")
 
@@ -24,10 +28,10 @@ def main():
     )
 
     if st.button("🔎 Debug Code"):
-        if not user_input.strip():
+        if user_input is None or user_input.strip() == "":
             st.warning("Please enter some code or error message.")
-            return
-        with st.spinner("Analyzing your code.."):
+    else:
+        with st.spinner("Analyzing your code..."):
             try:
                 prompt = build_debugging_prompt(user_input)
                 client = GeminiClient()
