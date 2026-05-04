@@ -11,24 +11,21 @@ from utils.llm_client import GeminiClient
 from utils.debugging_helper import build_debugging_prompt
 
 
+# ---------------- CLEAN RESPONSE ----------------
 def clean_code(text):
-    """Clean LLM output"""
     if not text:
         return ""
 
-    # remove markdown
     text = re.sub(r"```[a-zA-Z]*", "", text)
     text = text.replace("```", "")
-
-    # fix escaped characters
     text = text.replace("\\n", "\n")
     text = text.replace('\\"', '"')
 
     return text.strip()
 
 
+# ---------------- EXTRACT JSON ----------------
 def extract_json(response):
-    """Safely extract JSON from LLM response"""
     try:
         start = response.find("{")
         end = response.rfind("}") + 1
@@ -38,12 +35,17 @@ def extract_json(response):
         return None
 
 
+# ---------------- MAIN APP ----------------
 def main():
     st.set_page_config(
         page_title="AI Debugging Assistant",
         page_icon="🧠",
         layout="centered"
     )
+
+    # ✅ SESSION STATE (prevents refresh loop)
+    if "result" not in st.session_state:
+        st.session_state.result = None
 
     # ---- Header ----
     st.markdown(
@@ -84,68 +86,8 @@ def main():
                 client = GeminiClient()
                 response = client.ask(prompt)
 
-                st.markdown("---")
-                st.subheader("🧠 Debugging Result")
-                st.success("✅ Analysis Complete")
-
-                data = extract_json(response)
-
-                if not data:
-                    st.error("⚠️ Failed to parse response. Try again.")
-                    return
-
-                # ---- Explanation ----
-                with st.expander("🧠 Explanation", expanded=True):
-                    st.markdown(data.get("explanation", "No explanation provided."))
-
-                # ---- Error ----
-                with st.expander("❌ Error"):
-                    st.warning(data.get("error", "No error detected."))
-
-                # ---- Line ----
-                line = data.get("line", "")
-                if line:
-                    with st.expander("📍 Possible Error Location"):
-                        st.warning(f"⚠️ {line}")
-
-                # ---- Fix ----
-                raw_fix = data.get("fix", "")
-                fix_code = clean_code(raw_fix)
-
-                with st.expander("🔧 Fix"):
-                    st.code(
-                        fix_code if fix_code else "No fix available.",
-                        language="python",
-                        wrap_lines=True,
-                        line_numbers=True
-                    )
-
-                # ---- Diff ----
-                if fix_code:
-                    original = user_input.strip().splitlines()
-                    fixed = fix_code.splitlines()
-
-                    diff = difflib.unified_diff(
-                        original,
-                        fixed,
-                        fromfile="Original",
-                        tofile="Fixed",
-                        lineterm=""
-                    )
-
-                    diff_text = "\n".join(diff)
-
-                    with st.expander("🔄 Code Difference"):
-                        st.code(diff_text, language="diff", wrap_lines=True)
-
-                # ---- Tips ----
-                with st.expander("💡 Tips"):
-                    tips = data.get("tips", "")
-                    if isinstance(tips, list):
-                        for t in tips:
-                            st.markdown(f"- {t}")
-                    else:
-                        st.markdown(tips or "No additional tips.")
+                # ✅ SAVE RESULT (prevents rerun issues)
+                st.session_state.result = response
 
             except Exception as e:
                 if "429" in str(e):
@@ -153,7 +95,74 @@ def main():
                 elif "API key expired" in str(e) or "API_KEY_INVALID" in str(e):
                     st.error("🔑 API key expired. Please generate a new one.")
                 else:
-                    st.error(f"❌ Error: {str(e)}")
+                    st.error("⚠️ AI service error. Please try again.")
+                st.stop()   # ✅ CRITICAL: stops refresh loop
+
+    # ---- SHOW RESULT ----
+    if st.session_state.result:
+        response = st.session_state.result
+
+        st.markdown("---")
+        st.subheader("🧠 Debugging Result")
+        st.success("✅ Analysis Complete")
+
+        data = extract_json(response)
+
+        if not data:
+            st.error("⚠️ Failed to parse response. Try again.")
+            return
+
+        # ---- Explanation ----
+        with st.expander("🧠 Explanation", expanded=True):
+            st.markdown(data.get("explanation", "No explanation provided."))
+
+        # ---- Error ----
+        with st.expander("❌ Error"):
+            st.warning(data.get("error", "No error detected."))
+
+        # ---- Line ----
+        line = data.get("line", "")
+        if line:
+            with st.expander("📍 Possible Error Location"):
+                st.warning(f"⚠️ {line}")
+
+        # ---- Fix ----
+        raw_fix = data.get("fix", "")
+        fix_code = clean_code(raw_fix)
+
+        with st.expander("🔧 Fix"):
+            st.code(
+                fix_code if fix_code else "No fix available.",
+                language="python",
+                line_numbers=True
+            )
+
+        # ---- Diff ----
+        if fix_code:
+            original = user_input.strip().splitlines()
+            fixed = fix_code.splitlines()
+
+            diff = difflib.unified_diff(
+                original,
+                fixed,
+                fromfile="Original",
+                tofile="Fixed",
+                lineterm=""
+            )
+
+            diff_text = "\n".join(diff)
+
+            with st.expander("🔄 Code Difference"):
+                st.code(diff_text, language="diff")
+
+        # ---- Tips ----
+        with st.expander("💡 Tips"):
+            tips = data.get("tips", "")
+            if isinstance(tips, list):
+                for t in tips:
+                    st.markdown(f"- {t}")
+            else:
+                st.markdown(tips or "No additional tips.")
 
     # ---- Footer ----
     st.markdown(
