@@ -3,17 +3,17 @@ import os
 import json
 import difflib
 import re
-
 import streamlit as st
 
+# ✅ MUST BE FIRST STREAMLIT COMMAND
 st.set_page_config(
-        page_title="AI Debugging Assistant",
-        page_icon="🧠",
-        layout="centered"
-    )
+    page_title="AI Debugging Assistant",
+    page_icon="🧠",
+    layout="centered"
+)
 
+# Path setup
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
-
 
 from utils.llm_client import GeminiClient
 from utils.debugging_helper import build_debugging_prompt
@@ -46,13 +46,7 @@ def extract_json(response):
 # ---------------- MAIN APP ----------------
 def main():
 
-    st.set_page_config(
-    page_title="AI Debugging Assistant",
-    page_icon="🧠",
-    layout="centered"
-    )
-
-    # 🔥 ADD THIS
+    # ✅ Fix horizontal scroll
     st.markdown(
         """
         <style>
@@ -64,8 +58,7 @@ def main():
         unsafe_allow_html=True
     )
 
-
-    # ✅ SESSION STATE (prevents refresh loop)
+    # ✅ Prevent refresh loop
     if "result" not in st.session_state:
         st.session_state.result = None
 
@@ -108,7 +101,7 @@ def main():
                 client = GeminiClient()
                 response = client.ask(prompt)
 
-                # ✅ SAVE RESULT (prevents rerun issues)
+                # ✅ Store result
                 st.session_state.result = response
 
             except Exception as e:
@@ -118,9 +111,10 @@ def main():
                     st.error("🔑 API key expired. Please generate a new one.")
                 else:
                     st.error("⚠️ AI service error. Please try again.")
-                st.stop()   # ✅ CRITICAL: stops refresh loop
 
-    # ---- SHOW RESULT ----
+                st.stop()  # ✅ Prevent infinite reload
+
+    # ---- Show Result ----
     if st.session_state.result:
         response = st.session_state.result
 
