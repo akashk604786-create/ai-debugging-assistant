@@ -4,6 +4,8 @@ import json
 import difflib
 import re
 
+st.set_option('server.runOnSave', False)
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 import streamlit as st
@@ -37,6 +39,25 @@ def extract_json(response):
 
 # ---------------- MAIN APP ----------------
 def main():
+
+    st.set_page_config(
+    page_title="AI Debugging Assistant",
+    page_icon="🧠",
+    layout="centered"
+    )
+
+    # 🔥 ADD THIS
+    st.markdown(
+        """
+        <style>
+        .stApp {
+            overflow-x: hidden;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
     st.set_page_config(
         page_title="AI Debugging Assistant",
         page_icon="🧠",
