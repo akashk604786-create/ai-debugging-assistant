@@ -13,10 +13,10 @@ class GeminiClient:
         self.model_cfg = self.app_config.model
 
         # ✅ FIXED HERE
-        self.api_key = api_key or os.getenv("GOOGLE_API_KEY")
+        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
 
         if not self.api_key:
-            raise ValueError("GOOGLE_API_KEY not found.")
+            raise ValueError("GEMINI_API_KEY not found.")
 
         genai.configure(api_key=self.api_key)
 
