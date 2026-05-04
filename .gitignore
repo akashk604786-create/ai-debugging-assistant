@@ -13,4 +13,4 @@ myenv/
 .DS_Store
 
 # IDE
-.vscode/
+.vscode/.streamlit/
