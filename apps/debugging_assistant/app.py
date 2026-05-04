@@ -11,8 +11,6 @@ import streamlit as st
 from utils.llm_client import GeminiClient
 from utils.debugging_helper import build_debugging_prompt
 
-st.set_option('server.runOnSave', False)
-
 
 # ---------------- CLEAN RESPONSE ----------------
 def clean_code(text):
