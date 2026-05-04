@@ -4,6 +4,11 @@ import json
 import difflib
 import re
 
+st.set_page_config(
+        page_title="AI Debugging Assistant",
+        page_icon="🧠",
+        layout="centered"
+    )
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
@@ -57,11 +62,6 @@ def main():
         unsafe_allow_html=True
     )
 
-    st.set_page_config(
-        page_title="AI Debugging Assistant",
-        page_icon="🧠",
-        layout="centered"
-    )
 
     # ✅ SESSION STATE (prevents refresh loop)
     if "result" not in st.session_state:
