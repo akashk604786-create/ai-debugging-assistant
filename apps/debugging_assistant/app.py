@@ -4,6 +4,8 @@ import json
 import difflib
 import re
 
+import streamlit as st
+
 st.set_page_config(
         page_title="AI Debugging Assistant",
         page_icon="🧠",
@@ -12,7 +14,7 @@ st.set_page_config(
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-import streamlit as st
+
 from utils.llm_client import GeminiClient
 from utils.debugging_helper import build_debugging_prompt
 
