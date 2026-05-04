@@ -17,7 +17,7 @@ def build_debugging_prompt(user_input: str) -> str:
 
     full_prompt = (
         system_instruction + "\n\n" + 
-        template.replace("{{USER_INPUT}}", user_input.strip())
+        template.replace("{USER_INPUT}", user_input.strip())
     )
 
     return full_prompt

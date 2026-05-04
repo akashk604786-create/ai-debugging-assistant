@@ -1,5 +1,9 @@
 import sys
 import os
+import json
+import difflib
+import re
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 import streamlit as st
@@ -7,27 +11,74 @@ from utils.llm_client import GeminiClient
 from utils.debugging_helper import build_debugging_prompt
 
 
+def clean_code(text):
+    """Clean LLM output"""
+    if not text:
+        return ""
+
+    # remove markdown
+    text = re.sub(r"```[a-zA-Z]*", "", text)
+    text = text.replace("```", "")
+
+    # fix escaped characters
+    text = text.replace("\\n", "\n")
+    text = text.replace('\\"', '"')
+
+    return text.strip()
+
+
+def extract_json(response):
+    """Safely extract JSON from LLM response"""
+    try:
+        start = response.find("{")
+        end = response.rfind("}") + 1
+        json_str = response[start:end]
+        return json.loads(json_str)
+    except:
+        return None
+
+
 def main():
     st.set_page_config(
-        page_title= "AI Debugging Assistant",
-        page_icon="🔎",
+        page_title="AI Debugging Assistant",
+        page_icon="🧠",
         layout="centered"
     )
 
-    st.title("🔧 AI Debugging Assistant")
-    st.write("Paste your **Python Code** or **error log**, and I'll help you debug it.")
+    # ---- Header ----
+    st.markdown(
+        """
+        <h1 style='text-align: center;'>🧠 AI Debugging Assistant</h1>
+        <p style='text-align: center; color: grey;'>
+        Paste your Python code or error logs and get instant debugging help.
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown("---")
+
+    # ---- Input ----
+    st.subheader("📥 Input Code / Error")
 
     user_input = st.text_area(
-        "Enter your code or error log below:",
-        height=200,
+        "Enter your code or error:",
+        height=220,
         placeholder="Example:\nprint(Hello World)"
     )
 
-    if st.button("🔎 Debug Code"):
+    debug_clicked = st.button("🔍 Debug")
+
+    if not user_input:
+        st.info("👆 Enter your code above and click Debug to get started.")
+
+    # ---- Debug ----
+    if debug_clicked:
         if not user_input.strip():
-            st.warning("Please enter some code or error message.")
+            st.warning("⚠️ Please enter some code or error message.")
             return
-        with st.spinner("Analyzing your code.."):
+
+        with st.spinner("⚡ Analyzing your code..."):
             try:
                 prompt = build_debugging_prompt(user_input)
                 client = GeminiClient()
@@ -35,10 +86,86 @@ def main():
 
                 st.markdown("---")
                 st.subheader("🧠 Debugging Result")
-                st.markdown(response)
+                st.success("✅ Analysis Complete")
+
+                data = extract_json(response)
+
+                if not data:
+                    st.error("⚠️ Failed to parse response. Try again.")
+                    return
+
+                # ---- Explanation ----
+                with st.expander("🧠 Explanation", expanded=True):
+                    st.markdown(data.get("explanation", "No explanation provided."))
+
+                # ---- Error ----
+                with st.expander("❌ Error"):
+                    st.warning(data.get("error", "No error detected."))
+
+                # ---- Line ----
+                line = data.get("line", "")
+                if line:
+                    with st.expander("📍 Possible Error Location"):
+                        st.warning(f"⚠️ {line}")
+
+                # ---- Fix ----
+                raw_fix = data.get("fix", "")
+                fix_code = clean_code(raw_fix)
+
+                with st.expander("🔧 Fix"):
+                    st.code(
+                        fix_code if fix_code else "No fix available.",
+                        language="python",
+                        wrap_lines=True,
+                        line_numbers=True
+                    )
+
+                # ---- Diff ----
+                if fix_code:
+                    original = user_input.strip().splitlines()
+                    fixed = fix_code.splitlines()
+
+                    diff = difflib.unified_diff(
+                        original,
+                        fixed,
+                        fromfile="Original",
+                        tofile="Fixed",
+                        lineterm=""
+                    )
+
+                    diff_text = "\n".join(diff)
+
+                    with st.expander("🔄 Code Difference"):
+                        st.code(diff_text, language="diff", wrap_lines=True)
+
+                # ---- Tips ----
+                with st.expander("💡 Tips"):
+                    tips = data.get("tips", "")
+                    if isinstance(tips, list):
+                        for t in tips:
+                            st.markdown(f"- {t}")
+                    else:
+                        st.markdown(tips or "No additional tips.")
 
             except Exception as e:
-                st.error(f"An error occurred: {str(e)}")
+                if "429" in str(e):
+                    st.error("⚠️ API limit reached. Please try again later.")
+                elif "API key expired" in str(e) or "API_KEY_INVALID" in str(e):
+                    st.error("🔑 API key expired. Please generate a new one.")
+                else:
+                    st.error(f"❌ Error: {str(e)}")
 
-if __name__=="__main__":
+    # ---- Footer ----
+    st.markdown(
+        """
+        <hr>
+        <p style='text-align:center; color:grey; font-size:12px;'>
+        Built by Akash Kumar • AI Debugging Assistant 🚀
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+if __name__ == "__main__":
     main()
