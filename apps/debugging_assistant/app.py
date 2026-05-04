@@ -4,13 +4,14 @@ import json
 import difflib
 import re
 
-st.set_option('server.runOnSave', False)
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 import streamlit as st
 from utils.llm_client import GeminiClient
 from utils.debugging_helper import build_debugging_prompt
+
+st.set_option('server.runOnSave', False)
 
 
 # ---------------- CLEAN RESPONSE ----------------
