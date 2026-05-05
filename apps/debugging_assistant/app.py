@@ -1,6 +1,6 @@
 import streamlit as st
 
-# MUST be the first Streamlit command in the script
+# 1. MUST be the absolute first line of code executed to prevent connection loops
 st.set_page_config(
     page_title="AI Debugging Assistant",
     page_icon="🔎",
@@ -10,13 +10,13 @@ st.set_page_config(
 import sys
 import os
 
-# Ensure the root directory is in the path for module imports
+# 2. Perform system path modifications and other imports AFTER config
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 from utils.llm_client import GeminiClient
 from utils.debugging_helper import build_debugging_prompt
 
-# This decorator ensures the GeminiClient is only initialized once
+# 3. Cache the resource to keep the connection stable
 @st.cache_resource
 def get_gemini_client():
     return GeminiClient()
@@ -29,7 +29,7 @@ def main():
     user_input = st.text_area(
         "Enter your code or error log below:",
         height=200,
-        placeholder="Example:\nprint(hello + 6)"
+        placeholder="Example:\nprint(\"hello\" + 5)"
     )
 
     # Button Logic
@@ -38,18 +38,19 @@ def main():
         if not user_input or user_input.strip() == "":
             st.warning("Please enter some code or an error message first.")
         else:
+            # The spinner provides visual feedback that the app is working
             with st.spinner("Analyzing your code..."):
                 try:
-                    # 1. Build the prompt using your helper
+                    # Build the prompt
                     prompt = build_debugging_prompt(user_input)
                     
-                    # 2. Get the cached client
+                    # Get the cached client
                     client = get_gemini_client()
                     
-                    # 3. Get the AI response
+                    # Get the AI response
                     response = client.ask(prompt)
 
-                    # 4. Display the results
+                    # Display the results
                     st.markdown("---")
                     st.subheader("🧠 Debugging Result")
                     st.markdown(response)
