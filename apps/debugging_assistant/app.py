@@ -7,6 +7,12 @@ import streamlit as st
 from utils.llm_client import GeminiClient
 from utils.debugging_helper import build_debugging_prompt
 
+# This decorator ensures the GeminiClient is only initialized once
+# It stays in memory, making the app much more responsive
+@st.cache_resource
+def get_gemini_client():
+    return GeminiClient()
+
 def main():
     # Page configuration
     st.set_page_config(
@@ -36,8 +42,8 @@ def main():
                     # 1. Build the prompt using your helper
                     prompt = build_debugging_prompt(user_input)
                     
-                    # 2. Initialize the client (now with st.secrets support)
-                    client = GeminiClient()
+                    # 2. Get the cached client (instead of re-initializing)
+                    client = get_gemini_client()
                     
                     # 3. Get the AI response
                     response = client.ask(prompt)
