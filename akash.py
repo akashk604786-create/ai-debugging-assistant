@@ -39,13 +39,16 @@
 # ---------------------------------------------------------
 
 # Test4 -> debug_helper_test
-from utils.debugging_helper import build_debugging_prompt
-from utils.llm_client import GeminiClient
+# from utils.debugging_helper import build_debugging_prompt
+# from utils.llm_client import GeminiClient
 
-client = GeminiClient()
+# client = GeminiClient()
 
-user_code = "x = 5\nprint('x')"
-prompt = build_debugging_prompt(user_code)
+# user_code = "x = 5\nprint('x')"
+# prompt = build_debugging_prompt(user_code)
 
-result = client.ask(prompt)
-print(result)
+# result = client.ask(prompt)
+# print(result)
+import streamlit as st
+
+print(f"DEBUG: Secrets keys available: {list(st.secrets.keys())}")
