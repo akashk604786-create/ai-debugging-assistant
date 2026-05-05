@@ -2,60 +2,40 @@ import streamlit as st
 import sys
 import os
 
-# 1. FIX PATH FIRST (Fixes ModuleNotFoundError)
-# This allows the imports below to actually find your 'utils' folder.
+# 1. THE PATH FIX: Keeps your imports working on the cloud server
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-# 2. CONFIGURE PAGE (Fixes Bad Message Format)
-# Must be called before any other Streamlit UI commands.
-st.set_page_config(
-    page_title="AI Debugging Assistant",
-    page_icon="🔎",
-    layout="centered"
-)
-
-# 3. IMPORTS
+# 2. CLEAN IMPORTS
 from utils.llm_client import GeminiClient
 from utils.debugging_helper import build_debugging_prompt
 
-# 4. CACHE CLIENT (Fixes Connecting Loop)
-@st.cache_resource
-def get_gemini_client():
-    return GeminiClient()
+# 3. PAGE CONFIG: Must be the very first st command
+st.set_page_config(page_title="AI Debugging Assistant", page_icon="🔧")
 
 def main():
     st.title("🔧 AI Debugging Assistant")
-    st.write("Paste your **Python Code** or **error log**, and I'll help you debug it.")
+    st.write("Professional Python debugging powered by Gemini.")
 
-    user_input = st.text_area(
-        "Enter your code or error log below:",
-        height=200,
-        placeholder="Example:\nprint(\"hello\" + 5)"
-    )
+    user_input = st.text_area("Input Code or Error Log:", height=200)
 
     if st.button("🔎 Debug Code"):
-        if not user_input or user_input.strip() == "":
-            st.warning("Please enter some code or an error message first.")
+        if not user_input.strip():
+            st.warning("Please enter code to analyze.")
         else:
-            # Using st.empty() prevents the UI from flickering 
-            # and keeps the connection stable during long AI calls.
-            result_container = st.empty()
-            with st.spinner("Analyzing your code..."):
+            with st.spinner("Analyzing..."):
                 try:
+                    client = GeminiClient()
                     prompt = build_debugging_prompt(user_input)
-                    client = get_gemini_client()
                     response = client.ask(prompt)
-
-                    with result_container.container():
-                        st.markdown("---")
-                        st.subheader("🧠 Debugging Result")
-                        st.markdown(response)
-
+                    
+                    st.markdown("---")
+                    st.subheader("🧠 Debugging Result")
+                    st.markdown(response)
                 except Exception as e:
-                    st.error(f"An error occurred: {str(e)}")
+                    st.error(f"Analysis failed: {e}")
 
 if __name__ == "__main__":
     main()
