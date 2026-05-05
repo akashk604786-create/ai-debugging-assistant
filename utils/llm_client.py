@@ -21,26 +21,30 @@ class GeminiClient:
             os.getenv("GEMINI_API_KEY")
         )
         
-        if not self.api_key:
-            raise ValueError("GEMINI_API_KEY not found.")
+        # Robust check to ensure the key isn't None, empty, or just whitespace
+        if not self.api_key or str(self.api_key).strip() == "":
+            raise ValueError("GEMINI_API_KEY not found. Please check your Secrets or .env file.")
         
         # Configure client
-        genai.configure(api_key=self.api_key)
+        genai.configure(api_key=self.api_key.strip())
 
         # Initialize model
         self.model = genai.GenerativeModel(self.model_cfg.name)
 
     def ask(self, prompt: str) -> str:
-        response = self.model.generate_content(
-            prompt,
-            generation_config={
-                "temperature": self.model_cfg.temperature,
-                "top_p": self.model_cfg.top_p,
-                "max_output_tokens": self.model_cfg.max_output_token
-            }
-        )
+        try:
+            response = self.model.generate_content(
+                prompt,
+                generation_config={
+                    "temperature": self.model_cfg.temperature,
+                    "top_p": self.model_cfg.top_p,
+                    "max_output_tokens": self.model_cfg.max_output_token
+                }
+            )
 
-        if not response or not hasattr(response, "text"):
-            return "No response generated. Please try again."
-        
-        return response.text
+            if not response or not hasattr(response, "text"):
+                return "No response generated. Please try again."
+            
+            return response.text
+        except Exception as e:
+            return f"Error during model generation: {str(e)}"
