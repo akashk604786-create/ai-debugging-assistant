@@ -2,25 +2,26 @@ import streamlit as st
 import sys
 import os
 
-# 1. Absolute First Step: Set the System Path
-# This must happen before "from utils..." so Python can find your folders.
+# STAGE 1: SET SYSTEM PATH (Fixes ModuleNotFoundError)
+# This must run before 'from utils...' so the server knows where the utils folder is.
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-# 2. Now import your custom modules
+# STAGE 2: IMPORTS
 from utils.llm_client import GeminiClient
 from utils.debugging_helper import build_debugging_prompt
 
-# 3. Configure the Page
+# STAGE 3: INITIALIZE SESSION (Fixes Bad Message Format)
+# This MUST be the first Streamlit command called.
 st.set_page_config(
     page_title="AI Debugging Assistant",
     page_icon="🔎",
     layout="centered"
 )
 
-# 4. Cache the Client for connection stability
+# STAGE 4: CACHING (Fixes the Connecting Loop)
 @st.cache_resource
 def get_gemini_client():
     return GeminiClient()
@@ -41,7 +42,8 @@ def main():
         if not user_input or user_input.strip() == "":
             st.warning("Please enter some code or an error message first.")
         else:
-            # Container helps prevent UI flickering during connection
+            # result_container ensures Streamlit has a dedicated spot to write to,
+            # which prevents the "Connecting" UI glitch.
             result_container = st.empty()
             with st.spinner("Analyzing your code..."):
                 try:
